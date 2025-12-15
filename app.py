@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 from datetime import datetime
 
 # Page configuration
@@ -145,7 +146,7 @@ def main():
     
     if selected_series:
         # Create figure with secondary y-axis
-        fig = go.Figure()
+        fig = make_subplots(specs=[[{"secondary_y": True}]])
         
         # Color palette
         colors = {
@@ -163,7 +164,16 @@ def main():
             "Avg_Weekly_Hours": "Avg Weekly Hours"
         }
         
+        # Define which series go on which axis
+        # Primary Y-axis (left): Large numbers (employees)
+        primary_axis_series = ["Total_Nonfarm_Employees"]
+        # Secondary Y-axis (right): Small numbers (rates, dollars, hours)
+        secondary_axis_series = ["Unemployment_Rate", "Avg_Hourly_Earnings", "Avg_Weekly_Hours"]
+        
         for series in selected_series:
+            # Determine which axis to use
+            use_secondary = series in secondary_axis_series
+            
             fig.add_trace(
                 go.Scatter(
                     x=df_filtered["date"],
@@ -171,13 +181,17 @@ def main():
                     name=display_names[series],
                     line=dict(color=colors[series], width=2),
                     mode="lines+markers"
-                )
+                ),
+                secondary_y=use_secondary
             )
+        
+        # Update axes labels
+        fig.update_xaxes(title_text="Date")
+        fig.update_yaxes(title_text="Employees (Thousands)", secondary_y=False)
+        fig.update_yaxes(title_text="Rate (%) / Dollars ($) / Hours", secondary_y=True)
         
         fig.update_layout(
             title="US Labor Statistics Trends",
-            xaxis_title="Date",
-            yaxis_title="Value",
             hovermode="x unified",
             height=500,
             template="plotly_white",
