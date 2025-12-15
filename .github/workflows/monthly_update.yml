@@ -1,0 +1,35 @@
+name: Monthly Data Update
+
+on:
+  schedule:
+    # Run on the 10th of each month at 2 AM UTC (after BLS typically releases data)
+    - cron: '0 2 10 * *'
+  workflow_dispatch:  # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install pandas requests
+      
+      - name: Fetch updated BLS data
+        run: |
+          python get_data.py
+      
+      - name: Commit and push if data changed
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add labor_data.csv
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update labor data - $(date +'%Y-%m-%d')" && git push)
